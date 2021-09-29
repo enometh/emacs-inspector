@@ -1048,6 +1048,12 @@ The environment used is the one when entering the activation frame at point."
   "Major mode for the Emacs Lisp Inspector."
   (setq-local tool-bar-map inspector-tool-bar-map))
 
+;;(defalias 'emacs-inspect 'inspector-inspect-expression)
+(defun emacs-inspect (sexp)
+  ;;  (interactive "XInspect Value: ")
+  (interactive (list (read--expression "Eval and inspect: " (thing-at-point 'sexp))))
+    (inspector-inspect (eval sexp t) (if current-prefix-arg nil inspector-default-preserve-history-p) sexp))
+
 
 (provide 'inspector)
 
