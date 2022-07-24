@@ -1055,6 +1055,14 @@ The environment used is the one when entering the activation frame at point."
     (inspector-inspect (eval sexp t) (if current-prefix-arg nil inspector-default-preserve-history-p) sexp))
 
 
+(eval-after-load "ielm"
+  '(define-key  ielm-map (kbd "C-c I") 'emacs-inspect))
+
+(eval-after-load "elisp-mode"
+  '(progn
+     (lookup-key emacs-lisp-mode-map (kbd "C-c I"))
+     (define-key  lisp-interaction-mode-map (kbd "C-c I") 'emacs-inspect)))
+
 (provide 'inspector)
 
 ;;; inspector.el ends here
