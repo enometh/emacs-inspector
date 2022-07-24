@@ -1048,6 +1048,7 @@ The environment used is the one when entering the activation frame at point."
 
 (define-derived-mode inspector-mode fundamental-mode "Inspector"
   "Major mode for the Emacs Lisp Inspector."
+  (add-hook 'xref-backend-functions 'elisp--xref-backend)
   (setq-local tool-bar-map inspector-tool-bar-map))
 
 ;;(defalias 'emacs-inspect 'inspector-inspect-expression)
