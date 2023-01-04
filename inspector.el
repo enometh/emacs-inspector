@@ -1048,6 +1048,7 @@ The environment used is the one when entering the activation frame at point."
     (define-key map (kbd "DEL") #'scroll-down-command)
     (define-key map (kbd "TAB") #'forward-button)
     (define-key map (kbd "M-TAB") #'backward-button)
+    (define-key map "i" #'inspector-inspect-expression)
     map))
 
 (easy-menu-define
