@@ -838,6 +838,9 @@ When PRESERVE-HISTORY is T, inspector history is not cleared."
 	    (switch-to-buffer-other-window buffer)
 	  (display-buffer buffer))))
     (with-current-buffer buffer
+      (setq-local revert-buffer-function
+		  (lambda (&rest _)
+		    (inspector-inspect object preserve-history)))
       (unless preserve-history
         (setq inspector-history nil))
       (when preserve-history
@@ -1024,6 +1027,7 @@ The environment used is the one when entering the activation frame at point."
     (define-key map (kbd "TAB") #'forward-button)
     (define-key map (kbd "M-TAB") #'backward-button)
     (define-key map "i" #'inspector-inspect-expression)
+    (define-key map "g" #'revert-buffer)
     map))
 
 (easy-menu-define
