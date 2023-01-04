@@ -832,10 +832,11 @@ is expected to be used.")
 When PRESERVE-HISTORY is T, inspector history is not cleared."
   (let ((current-inspected-object inspector-inspected-object)
         (buffer (inspector--basic-inspect object)))
-    (when (not preserve-history)
-      (if inspector-switch-to-buffer
-          (switch-to-buffer-other-window buffer)
-        (display-buffer buffer)))
+    (when t ;; (not preserve-history)
+      (unless (eql (current-buffer) buffer)
+	(if inspector-switch-to-buffer
+	    (switch-to-buffer-other-window buffer)
+	  (display-buffer buffer))))
     (with-current-buffer buffer
       (unless preserve-history
         (setq inspector-history nil))
