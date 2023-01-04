@@ -210,6 +210,8 @@ The target width is given by the `pp-max-width' variable."
 (defvar-local inspector-inspected-object nil
   "The current inspected object.")
 
+(defvar-local inspector-history-expressions (make-hash-table :weakness 'key-and-value))
+
 (defun inspector--insert-horizontal-line (&rest width)
   "Insert an horizontal line with width WIDTH."
   (ignore width)
@@ -812,7 +814,7 @@ is expected to be used.")
   "Evaluate EXP and inspect its result."
   (interactive (list (read--expression "Eval and inspect: ")))
 
-  (inspector-inspect (eval exp t)))
+  (inspector-inspect (eval exp t) nil exp))
 
 (defun inspector--basic-inspect (object)
   "Create and prepare a new buffer for inspecting OBJECT."
@@ -827,7 +829,7 @@ is expected to be used.")
       buffer)))
 
 ;;;###autoload
-(defun inspector-inspect (object &optional preserve-history)
+(defun inspector-inspect (object &optional preserve-history original-expression)
   "Top-level function for inspecting OBJECTs.
 When PRESERVE-HISTORY is T, inspector history is not cleared."
   (let ((current-inspected-object inspector-inspected-object)
@@ -838,9 +840,18 @@ When PRESERVE-HISTORY is T, inspector history is not cleared."
 	    (switch-to-buffer-other-window buffer)
 	  (display-buffer buffer))))
     (with-current-buffer buffer
+      (when original-expression (setf (gethash object inspector-history-expressions) original-expression))
       (setq-local revert-buffer-function
-		  (lambda (&rest _)
-		    (inspector-inspect object preserve-history)))
+		  (cond (original-expression
+			 (lambda (&rest _)
+			   (message "inspector-revert: emacs-inspect reverting expression %S" original-expression)
+			   (inspector-inspect-expression original-expression)))
+			(t
+			 (lambda (&rest _)
+			   (let ((e (gethash object inspector-history-expressions)))
+			     (message "object=%S original-expression=%S" object e)
+			     (if e (inspector-inspect-expression e)
+			       (message "inspector-revert: emacs-inspect was not called with an expression")))))))
       (unless preserve-history
         (setq inspector-history nil))
       (when preserve-history
@@ -883,8 +894,9 @@ When PRESERVE-HISTORY is T, inspector history is not cleared."
 (defun inspector-inspect-last-sexp ()
   "Evaluate sexp before point and inspect the result."
   (interactive)
-  (let ((result (eval (eval-sexp-add-defvars (elisp--preceding-sexp)) lexical-binding)))
-    (inspector-inspect result)))
+  (let* ((oexp nil)
+	 (result (eval (setq oexp (eval-sexp-add-defvars (elisp--preceding-sexp))) lexical-binding)))
+    (inspector-inspect result nil oexp)))
 
 (defun inspector--elisp-defun-at-point ()
   "Return the name of the function at point."
@@ -1008,7 +1020,7 @@ The environment used is the one when entering the activation frame at point."
 (defun inspector-inspect-edebug-expression (expr)
   "Evaluate EXPR in `edebug-mode', and inspect the result."
   (interactive "xInspect edebug expression: ")
-  (inspector-inspect (edebug-eval expr)))
+  (inspector-inspect (edebug-eval expr) nil expr))
 
 ;; Press 'C-c C-i' to inspect expression in edebug-mode
 (define-key edebug-mode-map (kbd "C-c C-i") #'inspector-inspect-edebug-expression)
