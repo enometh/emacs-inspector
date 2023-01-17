@@ -888,7 +888,7 @@ When PRESERVE-HISTORY is T, inspector history is not cleared."
   (interactive)
   (when inspector-history
     (let ((object (pop inspector-history)))
-      (inspector--basic-inspect object))))
+      (inspector-inspect object))))
 
 ;;;###autoload
 (defun inspector-inspect-last-sexp ()
