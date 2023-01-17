@@ -885,11 +885,20 @@ When PRESERVE-HISTORY is T, inspector history is not cleared."
     (delete-window))
   (kill-buffer "*inspector*"))
 
+(defvar-local inspector-next-object nil)
+
+(defun inspector-forward ()
+  (interactive)
+  (when inspector-next-object
+    (inspector-inspect inspector-next-object inspector-default-preserve-history)
+    (setq inspector-next-object nil)))
+
 (defun inspector-pop ()
   "Inspect previous object in inspector history."
   (interactive)
   (when inspector-history
     (let ((object (pop inspector-history)))
+      (setq inspector-next-object inspector-inspected-object)
       (inspector-inspect object inspector-default-preserve-history-p))))
 
 ;;;###autoload
@@ -1033,6 +1042,7 @@ The environment used is the one when entering the activation frame at point."
   (let ((map (make-keymap)))
     (define-key map "q" #'inspector-quit)
     (define-key map "l" #'inspector-pop)
+    (define-key map "r" #'inspector-forward)
     (define-key map "e" #'eval-expression)
     (define-key map "n" #'forward-button)
     (define-key map "p" #'backward-button)
