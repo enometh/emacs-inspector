@@ -820,12 +820,14 @@ is expected to be used.")
 
 ;;------ Commands -----------------------------
 
+(defvar inspector-default-preserve-history-p t)
+
 ;;;###autoload
 (defun inspector-inspect-expression (exp)
   "Evaluate EXP and inspect its result."
   (interactive (list (read--expression "Eval and inspect: ")))
 
-  (inspector-inspect (eval exp t) nil exp))
+  (inspector-inspect (eval exp t) (if current-prefix-arg nil inspector-default-preserve-history-p) exp))
 
 (defun inspector--basic-inspect (object)
   "Create and prepare a new buffer for inspecting OBJECT."
@@ -899,7 +901,7 @@ When PRESERVE-HISTORY is T, inspector history is not cleared."
   (interactive)
   (when inspector-history
     (let ((object (pop inspector-history)))
-      (inspector-inspect object))))
+      (inspector-inspect object inspector-default-preserve-history-p))))
 
 ;;;###autoload
 (defun inspector-inspect-last-sexp ()
@@ -907,7 +909,7 @@ When PRESERVE-HISTORY is T, inspector history is not cleared."
   (interactive)
   (let* ((oexp nil)
 	 (result (eval (setq oexp (eval-sexp-add-defvars (elisp--preceding-sexp))) lexical-binding)))
-    (inspector-inspect result nil oexp)))
+    (inspector-inspect result (if current-prefix-arg nil inspector-default-preserve-history-p) oexp)))
 
 (defun inspector--elisp-defun-at-point ()
   "Return the name of the function at point."
@@ -970,7 +972,7 @@ This has a similar purpose to \\[eval-defun]."
     (user-error "No backtrace frame at point.  Please move cursor to a backtrace frame"))
   (let* ((nframe (debugger-frame-number))
          (locals (backtrace--locals nframe)))
-    (inspector-inspect (inspector--alist-to-plist locals))))
+    (inspector-inspect (inspector--alist-to-plist locals) (if current-prefix-arg nil inspector-default-preserve-history-p))))
 
 ;;;###autoload
 (defun inspector-inspect-debugger-local (varname)
@@ -986,7 +988,7 @@ This has a similar purpose to \\[eval-defun]."
   (with-current-buffer "*Backtrace*"
     (let* ((n (debugger-frame-number))
            (locals (backtrace--locals n)))
-      (inspector-inspect (cdr (assoc (intern varname) locals))))))
+      (inspector-inspect (cdr (assoc (intern varname) locals)) (if current-prefix-arg nil inspector-default-preserve-history-p)))))
 
 ;;;###autoload
 (defun inspector-inspect-debugger-return-value ()
@@ -1002,7 +1004,7 @@ This has a similar purpose to \\[eval-defun]."
     (let ((debug-exit (cl-getf (backtrace-frame-args debug-frame) 'exit :_not_found_)))
       (when (eq debug-exit :_not_found_)
         (user-error "Debugger is not in return-value state"))
-      (inspector-inspect debug-exit))))
+      (inspector-inspect debug-exit (if current-prefix-arg nil inspector-default-preserve-history-p)))))
 
 ;;;###autoload
 (defun inspector-inspect-stack-frame ()
@@ -1012,7 +1014,7 @@ This has a similar purpose to \\[eval-defun]."
     (user-error "No backtrace frame at point.  Please move cursor to a backtrace frame"))
   (let* ((nframe (debugger-frame-number))
          (frames (backtrace-get-frames)))
-    (inspector-inspect (nth nframe frames))))
+    (inspector-inspect (nth nframe frames) (if current-prefix-arg nil inspector-default-preserve-history-p))))
 
 ;; Press letter 'i' in debugger backtrace to inspect locals.
 (define-key debugger-mode-map "i" #'inspector-inspect-stack-frame)
@@ -1023,7 +1025,7 @@ This has a similar purpose to \\[eval-defun]."
 The environment used is the one when entering the activation frame at point."
   (interactive
    (list (read--expression "Inspect in stack frame: ")))
-  (inspector-inspect (debugger-eval-expression exp)))
+  (inspector-inspect (debugger-eval-expression exp) (if current-prefix-arg nil inspector-default-preserve-history-p) exp))
 
 ;; ----- edebug-mode---------------------------------------
 
@@ -1031,7 +1033,7 @@ The environment used is the one when entering the activation frame at point."
 (defun inspector-inspect-edebug-expression (expr)
   "Evaluate EXPR in `edebug-mode', and inspect the result."
   (interactive "xInspect edebug expression: ")
-  (inspector-inspect (edebug-eval expr) nil expr))
+  (inspector-inspect (edebug-eval expr) (if current-prefix-arg nil inspector-default-preserve-history-p) expr))
 
 ;; Press 'C-c C-i' to inspect expression in edebug-mode
 (define-key edebug-mode-map (kbd "C-c C-i") #'inspector-inspect-edebug-expression)
