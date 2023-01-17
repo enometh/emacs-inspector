@@ -811,6 +811,8 @@ is expected to be used.")
 
 (defvar inspector-default-preserve-history-p t)
 
+(defvar inspector-prev-point nil)
+
 ;;;###autoload
 (defun inspector-inspect-expression (exp)
   "Evaluate EXP and inspect its result."
@@ -833,7 +835,11 @@ is expected to be used.")
 ;;;###autoload
 (defun inspector-inspect (object &optional preserve-history original-expression)
   "Top-level function for inspecting OBJECTs.
-When PRESERVE-HISTORY is T, inspector history is not cleared."
+When PRESERVE-HISTORY is T, inspector history is not cleared.
+FIXME: meaning of PRESERVE-HISTORY
+"
+  (when (string-match "^\\*inspector" (buffer-name))
+    (setq inspector-prev-point (point)))
   (let ((current-inspected-object inspector-inspected-object)
         (buffer (inspector--basic-inspect object)))
     (when t ;; (not preserve-history)
@@ -847,13 +853,18 @@ When PRESERVE-HISTORY is T, inspector history is not cleared."
 		  (cond (original-expression
 			 (lambda (&rest _)
 			   (message "inspector-revert: emacs-inspect reverting expression %S" original-expression)
-			   (inspector-inspect-expression original-expression)))
+			   (let ((prev-point inspector-prev-point))
+			     (inspector-inspect-expression original-expression)
+			     (when prev-point (goto-char prev-point)))))
 			(t
 			 (lambda (&rest _)
 			   (let ((e (gethash object inspector-history-expressions)))
 			     (message "object=%S original-expression=%S" object e)
-			     (if e (inspector-inspect-expression e)
-			       (message "inspector-revert: emacs-inspect was not called with an expression")))))))
+			     (let ((prev-point inspector-prev-point))
+			       (cond (e (inspector-inspect-expression e))
+				     (t (inspector--basic-inspect object))
+				     (message "inspector-revert: emacs-inspect was not called with an expression"))
+			       (when prev-point (goto-char prev-point)) ))))))
       (unless preserve-history
         (setq inspector-history nil))
       (when preserve-history
@@ -889,17 +900,27 @@ When PRESERVE-HISTORY is T, inspector history is not cleared."
 
 (defun inspector-forward ()
   (interactive)
+  (let ((prev-point inspector-prev-point)) ; no need for inspector-next-point, can you explain why?
   (when inspector-next-object
-    (inspector-inspect inspector-next-object inspector-default-preserve-history)
-    (setq inspector-next-object nil)))
+    (inspector-inspect inspector-next-object inspector-default-preserve-history-p)
+    (setq inspector-next-object nil)
+    (when prev-point
+      (goto-char prev-point)))))
 
 (defun inspector-pop ()
   "Inspect previous object in inspector history."
   (interactive)
   (when inspector-history
-    (let ((object (pop inspector-history)))
+    (let ((object (pop inspector-history))
+	  (prev-point inspector-prev-point))
       (setq inspector-next-object inspector-inspected-object)
-      (inspector-inspect object inspector-default-preserve-history-p))))
+      (inspector-inspect object inspector-default-preserve-history-p)
+      ;; ugh! FIXME remove default-preserve-history-p and use t
+      (let (a)
+	(cl-assert (eql (setq a (pop inspector-history)) inspector-next-object) nil
+		   "wtf pop=%S object=%S" a object))
+      (when prev-point
+	(goto-char prev-point)))))
 
 ;;;###autoload
 (defun inspector-inspect-last-sexp ()
