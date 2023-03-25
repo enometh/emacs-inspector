@@ -971,6 +971,7 @@ FIXME: meaning of PRESERVE-HISTORY
       ;; local-set-key modifies the mode map of the entire buffer's major mode (emacs-lisp-mode-map).
       ;; to modify the map for this buffer only, we need to use a copy of the mode-map:
       (use-local-map (copy-keymap emacs-lisp-mode-map))
+      (setq show-trailing-whitespace nil)
       (local-set-key "q" #'kill-this-buffer)
       (let ((pp-use-max-width inspector-pp-use-max-width)
             (pp-max-width inspector-pp-max-width))
@@ -1100,7 +1101,8 @@ The environment used is the one when entering the activation frame at point."
 (define-derived-mode inspector-mode fundamental-mode "Inspector"
   "Major mode for the Emacs Lisp Inspector."
   (add-hook 'xref-backend-functions 'elisp--xref-backend)
-  (setq-local tool-bar-map inspector-tool-bar-map))
+  (setq-local tool-bar-map inspector-tool-bar-map)
+  (setq show-trailing-whitespace nil))
 
 ;;(defalias 'emacs-inspect 'inspector-inspect-expression)
 (defun emacs-inspect (sexp)
